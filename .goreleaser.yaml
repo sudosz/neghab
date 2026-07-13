@@ -1,0 +1,145 @@
+# Neghab — GoReleaser Configuration
+# See: https://goreleaser.com
+#
+# Automates multi-platform binary builds, checksums, and GitHub releases.
+# Trigger: git tag push → GitHub Actions runs goreleaser.
+
+version: 2
+
+project_name: neghab
+
+before:
+  hooks:
+    - go mod tidy
+    - go vet ./...
+
+builds:
+  - id: neghab
+    main: .
+    binary: neghab
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - "7"
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.Version={{.Version}}
+      - -X main.BuildDate={{.Date}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    no_unique_dist_dir: true
+
+# ── Archives (for distribution as tar.gz) ─────────────────────────
+archives:
+  - id: neghab
+    builds:
+      - neghab
+    name_template: >-
+      neghab_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format: tar.gz
+    format_overrides:
+      - goos: linux
+        formats: [tar.gz]
+    files:
+      - deploy/neghab.toml
+      - LICENSE*
+      - README.md
+      - deploy/neghab.service
+      - deploy/install.sh
+
+# ── Checksum ──────────────────────────────────────────────────────
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+# ── Changelog ─────────────────────────────────────────────────────
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - "^Merge pull request"
+      - "^Merge branch"
+  groups:
+    - title: "🚀 Features"
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: "📚 Documentation"
+      regexp: '^.*?docs(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: "🔧 Maintenance"
+      order: 999
+
+# ── Release ───────────────────────────────────────────────────────
+release:
+  github:
+    owner: sudosz
+    name: neghab
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Neghab {{ .Version }}
+
+    **Advanced Network Traffic Simulator** — monitors real network traffic
+    and injects synthetic upload traffic to enforce a user-defined TX/RX ratio.
+
+    ### Installation
+
+    ```bash
+    curl -sSL https://raw.githubusercontent.com/sudosz/neghab/main/deploy/install.sh | sudo bash
+    ```
+
+    ### Manual Download
+
+    Download the binary for your architecture:
+
+    | Architecture | Binary |
+    |-------------|--------|
+    | amd64 | `neghab-linux-amd64` |
+    | arm64 | `neghab-linux-arm64` |
+
+    ### Checksums
+
+    ```
+    {{ .Checksums }}
+    ```
+
+# ── Snapcraft (optional, for Ubuntu Snap Store) ──────────────────
+# snapcrafts:
+#   - name: neghab
+#     summary: Advanced Network Traffic Simulator
+#     description: |
+#       Neghab monitors real network traffic on a Linux interface and injects
+#       synthetic upload traffic to enforce a user-defined TX/RX ratio.
+#     grade: stable
+#     confinement: classic
+#     publish: true
+
+# ── Homebrew (optional) ────────────────────────────────────────────
+# brews:
+#   - name: neghab
+#     repository:
+#       owner: sudosz
+#       name: homebrew-tap
+#     homepage: "https://github.com/sudosz/neghab"
+#     description: "Advanced Network Traffic Simulator"
+#     license: "MIT"
+#     install: |
+#       bin.install "neghab"
