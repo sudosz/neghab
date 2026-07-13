@@ -1,0 +1,59 @@
+[Unit]
+Description=Neghab — Advanced Network Traffic Simulator
+Documentation=https://github.com/sudosz/neghab
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+# Path to the binary — installed by the official install script.
+# Uses /etc/neghab/config.yaml for configuration.
+# CLI flags override config file and env var values.
+ExecStart=/usr/local/bin/neghab --config /etc/neghab/config.yaml
+
+Environment=NO_COLOR=1
+
+# Automatic restart on failure with exponential backoff
+Restart=always
+RestartSec=10
+
+# Resource limits
+CPUQuota=50%
+MemoryMax=256M
+MemoryHigh=128M
+TasksMax=32
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=no
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_NETLINK AF_UNIX
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictRealtime=yes
+
+# Capabilities — only CAP_NET_RAW for raw socket scenarios
+CapabilityBoundingSet=CAP_NET_RAW
+AmbientCapabilities=CAP_NET_RAW
+
+# Logging — stdout/stderr → journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=neghab
+
+# Kill signal and timeout
+KillSignal=SIGTERM
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

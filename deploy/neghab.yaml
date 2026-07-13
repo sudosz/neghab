@@ -1,0 +1,226 @@
+# ═══════════════════════════════════════════════════════════════════════════
+#  Neghab — Configuration File (YAML)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+#  Config file search order:
+#    1. --config <path>                  (explicit)
+#    2. /etc/neghab/config.yaml          (system-wide)
+#    3. ./neghab.yaml                    (local fallback)
+#
+#  Priority: CLI flags > env vars > config file > defaults
+#  Environment variables: NEGHAB_<KEY>  (e.g., NEGHAB_INTERFACE=eth0)
+#
+#  All fields are optional — omitted fields use their defaults.
+# ═══════════════════════════════════════════════════════════════════════════
+
+
+# ────────────────────────────────────────────────────────────────────────────
+#  Core Settings
+# ────────────────────────────────────────────────────────────────────────────
+
+# Network interface to monitor and send traffic through.
+interface: eth0
+
+# Target Upload/Download ratio:  TargetTX = deltaRX / ratio
+#   0.1  = Upload is 10× Download (heavy upload simulation)
+#   0.5  = Upload is  2× Download
+#   1.0  = Upload equals Download
+#   10   = Upload is 1/10 of Download (heavy download simulation)
+ratio: 0.1
+
+# Monitoring interval for reading /proc/net/dev stats.
+# Valid units: ms, s, m, h.
+interval: 500ms
+
+# ────────────────────────────────────────────────────────────────────────────
+#  Scenario Selection
+# ────────────────────────────────────────────────────────────────────────────
+#
+#  Valid scenarios:
+#    udp        — QUIC-like packets to silent IP (default, ~100% TX efficiency)
+#    tcp-rst    — TCP RST/ACK flood (requires CAP_NET_RAW / root)
+#    http-rst   — HTTP POST + RST abort (stealth TX, ~99.9% efficiency)
+#    dns        — DNS query spam to public resolvers
+#    upload     — HTTP POST upload via persistent connections & parallel streams
+#    download   — HTTP GET download (generates RX to feed the ratio formula)
+#    all        — Rotate through all available scenarios
+#
+#  Use comma-separated for rotation:  upload,download
+scenario: udp
+
+# ────────────────────────────────────────────────────────────────────────────
+#  Default Target (used by udp, tcp-rst, http-rst, dns, and as fallback)
+# ────────────────────────────────────────────────────────────────────────────
+
+target: 192.168.1.254
+port: 443
+
+# ────────────────────────────────────────────────────────────────────────────
+#  Workers & Tuning
+# ────────────────────────────────────────────────────────────────────────────
+
+# Number of concurrent generator workers.
+workers: 4
+
+# Minimum TX deficit (bytes) before dispatching a generation job.
+min_tx: 1024
+
+# Minimum desired TX per tick (bytes). Acts as a floor — useful when RX is
+# very low or zero to keep generating traffic. Set to 0 to disable.
+min_target_tx: 0
+
+# Deficit accumulation dampener (0.0 – 1.0).
+# Each tick, only smoothing × missing is added to the accumulator.
+# 1.0 = no dampening, 0.5 = slow accumulation.
+smoothing: 0.9
+
+# Scenario rotation interval. Set to a non-zero duration to cycle through
+# scenarios when using comma-separated list or "all".
+# e.g., 60s, 5m. 0s = no rotation.
+mix_interval: 0s
+
+# ────────────────────────────────────────────────────────────────────────────
+#  Shared HTTP Settings
+# ────────────────────────────────────────────────────────────────────────────
+
+# Default URL path for HTTP POST/GET requests — used by upload and download
+# scenarios. Each upload target can override this with a per-target path using
+# the "host:port/path" syntax.
+upload_path: /upload
+
+# URL path for the http-rst scenario (independent from upload_path).
+http_rst_path: /upload
+
+# ────────────────────────────────────────────────────────────────────────────
+#  HTTP-RST Scenario  —  Stealth TX via Aborted Uploads
+# ────────────────────────────────────────────────────────────────────────────
+#
+#  Sends an HTTP POST body then immediately resets the connection with RST.
+#  This looks like an aborted upload — extremely common on the internet.
+#  ~99.9% TX efficiency (only the SYN-ACK comes back as RX).
+#
+#  Use for: stealth low-overhead TX, bypassing simple traffic shaping.
+#  Does NOT work with real HTTP servers (RST prevents response reading).
+
+http_host: example.com        # Target hostname for the Host header
+# http_rst_path: /upload      # URL path for the POST request (defined above in Shared HTTP Settings)
+
+# ────────────────────────────────────────────────────────────────────────────
+#  Upload Scenario  —  Speedtest-Style Throughput
+# ────────────────────────────────────────────────────────────────────────────
+#
+#  Proper HTTP POST with persistent connections, parallel streams, and
+#  multi-server round-robin. Mimics how speedtest-cli saturates links.
+#
+#  Use for: maximum throughput through real HTTP servers.
+#  Requires: a running HTTP server that accepts POST requests.
+#
+#  Per-target upload paths use the first "/" as separator:
+#    "server:8080/speedtest/upload.php"  → host="server:8080", path="/speedtest/upload.php"
+#    "server:8080"                       → host="server:8080", path=upload_path
+
+upload_buffer_size: 131072     # 128 KB  (try 262144 or 524288 for high-throughput links)
+upload_streams: 1              # parallel streams per job (4–8 for maximum throughput)
+
+# ── Example: multi-server upload with per-target paths ─────────────────────
+# upload_targets:
+#   - mashhad1.irancell.ir:8080/speedtest/upload.php
+#   - speedtest1.pishgaman.net:8080/upload
+#   - speedtest.hostida.com:8080         # uses global upload_path
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ────────────────────────────────────────────────────────────────────────────
+#  Download Scenario  —  RX Generator
+# ────────────────────────────────────────────────────────────────────────────
+#
+#  HTTP GET request that reads back the response body, generating RX traffic
+#  on the interface. The RX feeds the controller's ratio formula:
+#    desiredTX = deltaRX / ratio
+#  creating a self-reinforcing bidirectional traffic loop.
+#
+#  Uses the first upload target's connection pool (shared with upload).
+#  Best used together with upload:  scenario: upload,download
+
+# ────────────────────────────────────────────────────────────────────────────
+#  DNS Scenario  —  Query Spam
+# ────────────────────────────────────────────────────────────────────────────
+
+dns_resolvers:
+  - 8.8.8.8
+  - 1.1.1.1
+  - 9.9.9.9
+
+# ────────────────────────────────────────────────────────────────────────────
+#  Debugging
+# ────────────────────────────────────────────────────────────────────────────
+
+verbose: false
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#  Example Configurations
+# ═══════════════════════════════════════════════════════════════════════════
+
+# ── Speedtest-style upload (max throughput) ────────────────────────────────
+#
+#   interface: eth0
+#   ratio: 0.1
+#   scenario: upload
+#   upload_targets:
+#     - mashhad1.irancell.ir:8080/speedtest/upload.php
+#     - speedtest1.pishgaman.net:8080/upload
+#   upload_streams: 8
+#   workers: 16
+#   upload_buffer_size: 524288
+#   min_target_tx: 10485760
+#   smoothing: 1.0
+
+
+# ── Upload + Download (bidirectional traffic loop) ─────────────────────────
+#
+#   interface: eth0
+#   ratio: 0.1
+#   scenario: upload,download
+#   target: speedtest.example.com
+#   port: 8080
+#   upload_path: /upload
+#   upload_streams: 4
+#   workers: 8
+#   min_target_tx: 5242880
+#   mix_interval: 30s
+
+
+# ── Stealth TX via HTTP-RST (minimal download overhead) ────────────────────
+#
+#   interface: eth0
+#   ratio: 0.1
+#   scenario: http-rst
+#   target: your-internal-server.com
+#   port: 443
+#   http_host: your-internal-server.com
+#   http_rst_path: /upload
+#   workers: 8
+#   smoothing: 0.5
+
+
+# ── DNS Query Spam ─────────────────────────────────────────────────────────
+#
+#   interface: eth0
+#   ratio: 0.15
+#   scenario: dns
+#   dns_resolvers:
+#     - 8.8.8.8
+#     - 1.1.1.1
+#     - 208.67.222.222
+#   workers: 4
+#   interval: 250ms
+#   verbose: true
+
+
+# ── All scenarios rotating every 60s ───────────────────────────────────────
+#
+#   interface: eth0
+#   ratio: 0.5
+#   scenario: all
+#   mix_interval: 60s
+#   workers: 8
