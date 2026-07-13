@@ -51,7 +51,7 @@ archives:
       - goos: linux
         formats: [tar.gz]
     files:
-      - deploy/neghab.toml
+      - deploy/neghab.yaml
       - LICENSE*
       - README.md
       - deploy/neghab.service
