@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Neghab-Traffic%20Simulator-6366f1?style=for-the-badge&logo=go&logoColor=white" alt="Neghab">
+  <img src="assets/neghab-banner.png" alt="Neghab Banner" width="800">
 </p>
 
 <p align="center">
@@ -26,37 +26,29 @@
 - [Quick Start](#-quick-start)
 - [Traffic Scenarios](#-traffic-scenarios)
 - [Installation](#-installation)
-- [CLI Usage](#-cli-usage)
+- [CLI Usage](#cli-usage)
 - [Configuration Reference](#-configuration-reference)
-- [systemd Service](#-systemd-service)
+- [systemd Service](#systemd-service)
 - [Building from Source](#-building-from-source)
 - [Project Structure](#-project-structure)
 - [Security](#-security)
-- [Legal Disclaimer](#-legal-disclaimer)
+- [Legal Disclaimer](#legal-disclaimer)
 
 ---
 
 ## 🔬 How It Works
 
 ```
-                          ┌─────────────────────────────────┐
-                          │         Neghab Daemon            │
-                          │                                  │
-  /proc/net/dev ─────────▶│  ┌──────────┐    ┌───────────┐  │   Generated
-                          │  │ Monitor  │───▶│Controller │  │   Traffic
-                          │  │ 500ms    │    │           │  │──▶──────▶
-                          │  └──────────┘    └─────┬─────┘  │
-                          │                        │        │
-                          │       accumulator      │dispatch│
-                          │       + cumulative     │        │
-                          │       ratio gating     ▼        │
-                          │                ┌───────────┐    │
-                          │                │ Generator │    │
-                          │                │   Pool    │    │
-                          │                │ (N workers│    │
-                          │                │  + mixer) │    │
-                          │                └───────────┘    │
-                          └─────────────────────────────────┘
+                     ┌────────────────────────────────────┐
+                     │           NEGHAB DAEMON            │
+                     │                                    │
+ /proc/net/dev ────▶│  Monitor ──▶ Controller ──▶ Pool │──▶ Generated
+    (every 500ms)    │   reads        computes        N   │      Traffic
+                     │   RX/TX       TX deficit   workers │
+                     │                                    │
+                     │   session baseline + cumulative    │
+                     │   ratio gating prevents overshoot  │
+                     └────────────────────────────────────┘
 ```
 
 **Three goroutine pipeline:**
@@ -259,6 +251,7 @@ sudo make install
 
 ---
 
+<a name="cli-usage"></a>
 ## ⌨️ CLI Usage
 
 ```bash
@@ -405,6 +398,7 @@ smoothing: 0.5
 
 ---
 
+<a name="systemd-service"></a>
 ## ⚙️ systemd Service
 
 ```bash
@@ -489,7 +483,8 @@ Neghab requires root to read `/proc/net/dev` and open raw sockets. The systemd s
 
 ---
 
-## ⚠️ Legal Disclaimer
+<a name="legal-disclaimer"></a>
+## Legal Disclaimer
 
 **This tool is for educational and research purposes on networks you own** or have explicit written permission to test.
 
