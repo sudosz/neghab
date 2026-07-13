@@ -34,7 +34,7 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2
+          version: latest
           args: --timeout=3m
 
   # ── 1b. Vulnerability Scan (govulncheck) ────────────────────────────
