@@ -1,0 +1,64 @@
+# ── Compiled binary ──────────────────────────────────────────────────
+neghab
+neghab.exe
+
+# ── Go build artifacts ───────────────────────────────────────────────
+*.test
+*.out
+*.prof
+*.pprof
+/coverage.txt
+/coverage.html
+
+# ── Go module cache (if vendored) ────────────────────────────────────
+vendor/
+
+# ── IDE & editor ─────────────────────────────────────────────────────
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# GoLand / IntelliJ
+.idea/
+*.iml
+
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ── OS files ─────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ── Temporary files ──────────────────────────────────────────────────
+*.tmp
+*.temp
+*.bak
+*.log
+
+# ── Distribution artifacts ───────────────────────────────────────────
+/dist/
+/release/
+
+# ── Environment & secrets ────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# ── Goreleaser ───────────────────────────────────────────────────────
+dist/

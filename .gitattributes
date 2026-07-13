@@ -1,0 +1,39 @@
+# ── Default ───────────────────────────────────────────────────────────
+# Let Git auto-detect text files and normalize to LF on commit.
+* text=auto eol=lf
+
+# ── Go ────────────────────────────────────────────────────────────────
+*.go          text eol=lf
+go.mod        text eol=lf
+go.sum        text eol=lf
+
+# ── Shell scripts ─────────────────────────────────────────────────────
+*.sh          text eol=lf
+*.bash        text eol=lf
+
+# ── Makefiles ─────────────────────────────────────────────────────────
+Makefile      text eol=lf
+*.mk          text eol=lf
+
+# ── Config & data files ───────────────────────────────────────────────
+*.yaml        text eol=lf
+*.yml         text eol=lf
+*.toml        text eol=lf
+*.json        text eol=lf
+*.service     text eol=lf
+
+# ── Documentation ─────────────────────────────────────────────────────
+*.md          text eol=lf
+
+# ── Scripts without extensions ────────────────────────────────────────
+# Pre-commit hook and any other executable scripts in .githooks/
+.githooks/*   text eol=lf
+
+# ── CI/CD ─────────────────────────────────────────────────────────────
+.github/**/*.yml  text eol=lf
+.github/**/*.yaml text eol=lf
+
+# ── Binaries (no conversion) ──────────────────────────────────────────
+*.png         binary
+*.ico         binary
+*.bin         binary
