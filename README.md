@@ -3,10 +3,10 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/github/actions/workflow/status/sudosz/neghab/release.yml?style=flat-square&label=ci" alt="CI">
   <img src="https://img.shields.io/github/go-mod/go-version/sudosz/neghab?style=flat-square" alt="Go Version">
   <img src="https://img.shields.io/github/license/sudosz/neghab?style=flat-square" alt="License">
   <img src="https://img.shields.io/github/v/release/sudosz/neghab?style=flat-square" alt="Release">
-  <img src="https://img.shields.io/github/actions/workflow/status/sudosz/neghab/release.yml?style=flat-square" alt="Build">
 </p>
 
 <p align="center">
